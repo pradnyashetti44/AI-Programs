@@ -1,0 +1,133 @@
+import tkinter as tk
+import random
+
+class SnakeGame:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Snake Game - AIML Environment")
+        self.root.resizable(False, False)
+
+        # Grid and Board Settings
+        self.board_width = 300
+        self.board_height = 300
+        self.dot_size = 10
+        self.delay = 200  # 0.2 seconds game tick
+
+        # Setup Canvas
+        self.canvas = tk.Canvas(root, width=self.board_width, height=self.board_height, bg="black", highlightthickness=0)
+        self.canvas.pack()
+
+        self.grid_width = self.board_width // self.dot_size
+        self.grid_height = self.board_height // self.dot_size
+
+        self.in_game = True
+        self.score = 0  # Initialize score tracking
+        
+        # Initial Direction Vectors (Starts moving forward automatically)
+        self.dx = 1
+        self.dy = 0
+
+        # Initial Snake Coordinates
+        self.snake = [[10, 10], [9, 10], [8, 10]]
+        self.food = [0, 0]
+
+        # Bind Arrow Keys
+        self.root.bind("<Left>", self.on_key_press)
+        self.root.bind("<Right>", self.on_key_press)
+        self.root.bind("<Up>", self.on_key_press)
+        self.root.bind("<Down>", self.on_key_press)
+
+        self.locate_food()
+        self.game_loop()
+
+    def locate_food(self):
+        while True:
+            rx = random.randint(0, self.grid_width - 1)
+            ry = random.randint(0, self.grid_height - 1)
+            if [rx, ry] not in self.snake:
+                self.food = [rx, ry]
+                break
+
+    def game_loop(self):
+        if self.in_game:
+            self.check_food()
+            self.move()
+            self.check_collision()
+            self.draw_elements()
+            self.root.after(self.delay, self.game_loop)
+        else:
+            self.draw_game_over()
+
+    def move(self):
+        for i in range(len(self.snake) - 1, 0, -1):
+            self.snake[i] = list(self.snake[i - 1])
+
+        head = self.snake[0]
+        self.snake[0] = [head[0] + self.dx, head[1] + self.dy]
+
+    def check_food(self):
+        if self.snake[0] == self.food:
+            self.snake.append(list(self.snake[-1]))
+            self.score += 1  # Increment score when food is eaten
+            self.locate_food()
+
+    def check_collision(self):
+        head = self.snake[0]
+        if head in self.snake[1:]:
+            self.in_game = False
+        if head[0] < 0 or head[0] >= self.grid_width or head[1] < 0 or head[1] >= self.grid_height:
+            self.in_game = False
+
+    def draw_elements(self):
+        self.canvas.delete("all")
+
+        # Draw Food
+        fx, fy = self.food[0] * self.dot_size, self.food[1] * self.dot_size
+        self.canvas.create_rectangle(fx, fy, fx + self.dot_size, fy + self.dot_size, fill="red", outline="")
+
+        # Draw Snake
+        for i, segment in enumerate(self.snake):
+            sx, sy = segment[0] * self.dot_size, segment[1] * self.dot_size
+            color = "green" if i == 0 else "#2DB400"
+            self.canvas.create_rectangle(sx, sy, sx + self.dot_size, sy + self.dot_size, fill=color, outline="")
+
+        # Live score display in the corner
+        self.canvas.create_text(35, 15, text=f"Score: {self.score}", fill="white", font=("Helvetica", 10, "bold"))
+
+    def on_key_press(self, event):
+        key = event.keysym
+        if key == "Left" and self.dx != 1:
+            self.dx = -1
+            self.dy = 0
+        elif key == "Right" and self.dx != -1:
+            self.dx = 1
+            self.dy = 0
+        elif key == "Up" and self.dy != 1:
+            self.dx = 0
+            self.dy = -1
+        elif key == "Down" and self.dy != -1:
+            self.dx = 0
+            self.dy = 1
+
+    def draw_game_over(self):
+        self.canvas.delete("all")
+        
+        # Display Final Score on the popup window interface
+        self.canvas.create_text(
+            self.board_width // 2, (self.board_height // 2) - 15,
+            text="Game Over", fill="red", font=("Helvetica", 16, "bold")
+        )
+        self.canvas.create_text(
+            self.board_width // 2, (self.board_height // 2) + 15,
+            text=f"Final Score: {self.score}", fill="white", font=("Helvetica", 14, "bold")
+        )
+        
+        # Print Final Score to the terminal window output console
+        print(f"\n--- Simulation Terminated ---")
+        print(f"Final Score: {self.score}")
+        print(f"-----------------------------\n")
+
+if __name__ == "__main__":
+    main_window = tk.Tk()
+    game = SnakeGame(main_window)
+    main_window.mainloop()
